@@ -183,16 +183,21 @@ macro_rules! usart {
                     // Enable clock for USART
                     rcc.$apbenr.modify(|_, w| w.$usartXen().set_bit());
 
+                    /* Reset other registers to disable advanced USART features */
+                    usart.cr2.reset();
+                    usart.cr3.reset();
+
                     // Calculate correct baudrate divisor on the fly
                     let brr = clocks.pclk().0 / baud_rate.0;
                     usart.brr.write(|w| unsafe { w.bits(brr) });
 
-                    // Reset other registers to disable advanced USART features
-                    usart.cr2.reset();
-                    usart.cr3.reset();
-
-                    // Enable transmission and receiving
-                    usart.cr1.modify(|_, w| w.te().set_bit().re().set_bit().ue().set_bit());
+                    /* Enable transmission and receiving */
+                    usart.cr1.modify(|_, w| {
+                        w
+                           .ue().enabled()
+                           .te().enabled()
+                           .re().enabled()
+                    });
 
                     Serial { usart, pins }
                 }
@@ -330,6 +335,13 @@ impl<USART, TXPIN, RXPIN> Serial<USART, TXPIN, RXPIN>
 where
     USART: Deref<Target = SerialRegisterBlock>,
 {
+    pub fn listen(&mut self, event: Event) {
+        match event {
+            Event::Rxne => self.usart.cr1.write(|w| w.rxneie().enabled()),
+            Event::Txe => self.usart.cr1.write(|w| w.txeie().enabled()),
+        }
+    }
+
     /// Splits the UART Peripheral in a Tx and an Rx part
     /// This is required for sending/receiving
     pub fn split(self) -> (Tx<USART>, Rx<USART>) {
