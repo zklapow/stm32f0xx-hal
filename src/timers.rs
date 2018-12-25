@@ -120,13 +120,7 @@ macro_rules! timers {
                 where
                     T: Into<Hertz>,
                 {
-                    // NOTE(unsafe) This executes only during initialisation
-                    let rcc = unsafe { &(*crate::stm32::RCC::ptr()) };
-
-                    // enable and reset peripheral to a clean slate state
-                    rcc.$apbenr.modify(|_, w| w.$timXen().set_bit());
-                    rcc.$apbrstr.modify(|_, w| w.$timXrst().set_bit());
-                    rcc.$apbrstr.modify(|_, w| w.$timXrst().clear_bit());
+                    Timer::<$TIM>::$timXen();
 
                     let mut timer = Timer {
                         clocks,
@@ -135,6 +129,17 @@ macro_rules! timers {
                     timer.start(timeout);
 
                     timer
+                }
+
+                 /// Enabled and reset this timer to a clean state without actually starting the timer
+                pub fn $timXen()
+                {
+                    // NOTE(unsafe) This executes only during initialisation
+                    let rcc = unsafe { &(*crate::stm32::RCC::ptr()) };
+                    // enable and reset peripheral to a clean slate state
+                    rcc.$apbenr.modify(|_, w| w.$timXen().set_bit());
+                    rcc.$apbrstr.modify(|_, w| w.$timXrst().set_bit());
+                    rcc.$apbrstr.modify(|_, w| w.$timXrst().clear_bit())
                 }
 
                 /// Starts listening for an `event`
