@@ -42,6 +42,7 @@ version = "0.2.2"
 
 [dev-dependencies]
 panic-halt = "0.2.0"
+cortex-m-rtfm = "0.4.0"
 
 [features]
 device-selected = []
