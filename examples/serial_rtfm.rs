@@ -47,6 +47,8 @@ const APP: () = {
             clocks,
         );
 
+        serial.listen(Event::Rxne);
+
         let (mut tx, mut rx) = serial.split();
 
         let mut led = gpioa.pa0.into_push_pull_output();
@@ -60,23 +62,16 @@ const APP: () = {
         RX = rx;
     }
 
-    #[idle(spawn = [return_byte], resources = [RX])]
-    fn idle() -> ! {
-        loop {
-            let data = block!(resources.RX.read()).expect("Failed to read from UART");
-            spawn.return_byte(data).ok();
-        }
-    }
-
     #[task(capacity = 100, resources = [TX])]
     fn return_byte(byte: u8) {
         block!(resources.TX.write(byte)).ok();
     }
-//
-//    #[interrupt(spawn = [return_byte], resources = [RX])]
-//    fn USART1() {
-//        spawn.return_byte(0).ok();
-//    }
+
+    #[interrupt(spawn = [return_byte], resources = [RX])]
+    fn USART1() {
+        let data = block!(resources.RX.read()).expect("Failed to read from UART");
+        spawn.return_byte(data).ok();
+    }
 
     extern "C" {
         fn TIM17();

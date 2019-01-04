@@ -335,13 +335,6 @@ impl<USART, TXPIN, RXPIN> Serial<USART, TXPIN, RXPIN>
 where
     USART: Deref<Target = SerialRegisterBlock>,
 {
-    pub fn listen(&mut self, event: Event) {
-        match event {
-            Event::Rxne => self.usart.cr1.write(|w| w.rxneie().enabled()),
-            Event::Txe => self.usart.cr1.write(|w| w.txeie().enabled()),
-        }
-    }
-
     /// Splits the UART Peripheral in a Tx and an Rx part
     /// This is required for sending/receiving
     pub fn split(self) -> (Tx<USART>, Rx<USART>) {
